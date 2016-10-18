@@ -301,13 +301,13 @@ class efficiencyList:
 		h2.GetXaxis().SetTitle("SuperCluster #eta")
 		h2.GetYaxis().SetTitle("p_{T} [GeV]")
 		return h2
-       if mc_eff_bool==1: 
+        if mc_eff_bool==1: 
 	       pt_binning=np.array([7, 15, 20, 30, 40, 50, 60, 80, 110, 150, 200], dtype=float)
 	       eta_binning=[0.0, 0.8, 1.479, 2.0, 2.5]
-	       mc_1=rt.TH1F('MC_eff_0.0_Eta_0.8', 'MC efficiency for 0.0<#eta<0.8', 10, pt_binning)                
-	       mc_2=rt.TH1F('MC_eff_0.8_Eta_1.479', 'MC efficiency for 0.8<#eta<1.479', 10, pt_binning)                
-	       mc_3=rt.TH1F('MC_eff_1.479_Eta_2.0', 'MC efficiency for 1.479<#eta<2.0', 10, pt_binning)                
-	       mc_4=rt.TH1F('MC_eff_2.0_Eta_2.5', 'MC efficiency for 2.0<#eta<2.5', 10, pt_binning)   
+	       mc_1=rt.TH1F('MC_eff_Eta_0.0_0.8', 'MC efficiency for 0.0<#eta<0.8', 10, pt_binning)                
+	       mc_2=rt.TH1F('MC_eff_Eta_0.8_1.479', 'MC efficiency for 0.8<#eta<1.479', 10, pt_binning)                
+	       mc_3=rt.TH1F('MC_eff_Eta_1.479_2.0', 'MC efficiency for 1.479<#eta<2.0', 10, pt_binning)                
+	       mc_4=rt.TH1F('MC_eff_Eta_2.0_2.5', 'MC efficiency for 2.0<#eta<2.5', 10, pt_binning)   
 	       mc_effs = [mc_1, mc_2, mc_3, mc_4]             
 	       for ix in range(1,h2.GetXaxis().GetNbins()+1):
 		    for iy in range(1,h2.GetYaxis().GetNbins()+1):
@@ -317,11 +317,14 @@ class efficiencyList:
 			    for etaBin in self.effList[ptBin].keys():
 				if h2.GetXaxis().GetBinLowEdge(ix) < etaBin[0] or h2.GetXaxis().GetBinUpEdge(ix) > etaBin[1]:
 				    continue
-			    current_pt_bin=np.digitize(ptBin, pt_binning)[0]
-			    current_eta_bin=np.digitize(etaBin, eta_binning)[0]-1
-			    mc_effs[current_eta_bin].SetBinContent(current_pt_bin, self.effList[ptBin][etaBin].effMC)
-			    mc_effs[current_eta_bin].SetBinError(current_pt_bin, self.effList[ptBin][etaBin].mc_eff_error)
-		return mc_effs
+			    	current_pt_bin=np.digitize(ptBin, pt_binning)[0]
+			    	current_eta_bin=np.digitize(etaBin, eta_binning)[0]-1
+			    	mc_effs[current_eta_bin].SetBinContent(current_pt_bin, self.effList[ptBin][etaBin].effMC)
+			    	mc_effs[current_eta_bin].SetBinError(current_pt_bin, self.effList[ptBin][etaBin].mc_eff_error)
+	       for hist in mc_effs:	
+			hist.GetXaxis().SetTitle('p_{T} [GeV]')
+			hist.GetYaxis().SetTitle('efficiency')
+	       return mc_effs
     def pt_1DGraph_list(self, doScaleFactor):
         self.symmetrizeSystVsEta()
         self.combineSyst()
