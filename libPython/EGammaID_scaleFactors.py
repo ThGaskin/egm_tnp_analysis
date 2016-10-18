@@ -81,7 +81,7 @@ def findMinMax( effis ):
 
     
 
-def EffiGraph1D(effDataList, sfList ,etaPlot,nameout):
+def EffiGraph1D(effDataList, sfList ,etaPlot,nameout, Saveoption):
             
     W = 800
     H = 800
@@ -125,7 +125,6 @@ def EffiGraph1D(effDataList, sfList ,etaPlot,nameout):
     minmax =  findMinMax( effDataList )
     effiMin = minmax[0]
     effiMax = minmax[1]
-    
     for key in sorted(effDataList.keys()):
         grBinsEffData = effUtil.makeTGraphFromList(effDataList[key], 'min', 'max')
         grBinsSF      = effUtil.makeTGraphFromList(sfList[key]     , 'min', 'max')
@@ -139,22 +138,12 @@ def EffiGraph1D(effDataList, sfList ,etaPlot,nameout):
                 
         grBinsEffData.GetHistogram().SetMinimum(effiMin)
         grBinsEffData.GetHistogram().SetMaximum(effiMax)
-
-#        if not etaPlot:
-            ### for pT 1D plot, use the actual TGraph range
-#            xMin = grBinsEffData.GetHistogram().GetXaxis().GetXmin()
-#            xMax = grBinsEffData.GetHistogram().GetXaxis().GetXmax()
-            
-            #            if grBinsEffData.GetHistogram().GetXaxis().GetXmin() < xMin:
-            #    xMin = grBinsEffData.GetHistogram().GetXaxis().GetXmin()
-            #if grBinsEffData.GetHistogram().GetXaxis().GetXmax() > xMax:
-            #    xMax = grBinsEffData.GetHistogram().GetXaxis().GetXmax()
-        
+ 
         grBinsEffData.GetHistogram().GetXaxis().SetLimits(xMin,xMax)
         grBinsSF.GetHistogram()     .GetXaxis().SetLimits(xMin,xMax)
         grBinsSF.GetHistogram().SetMinimum(sfMin)
         grBinsSF.GetHistogram().SetMaximum(sfMax)
-
+	
 
         
         grBinsSF.GetHistogram().GetXaxis().SetTitleOffset(1)
@@ -169,18 +158,36 @@ def EffiGraph1D(effDataList, sfList ,etaPlot,nameout):
         grBinsEffData.GetHistogram().GetYaxis().SetTitleOffset(1)
         grBinsEffData.GetHistogram().GetYaxis().SetTitle("Data efficiency" )
         grBinsEffData.GetHistogram().GetYaxis().SetRangeUser( effiMin, effiMax )
-
-            
-        ### to avoid loosing the TGraph keep it in memory by adding it to a list
-        listOfTGraph1.append( grBinsEffData )
+	### to avoid loosing the TGraph keep it in memory by adding it to a list
+	### if the argument 'Save' is true, save efficiency plots in the SF2D root file(specified in doEGM_SFs)
+        if Saveoption:
+		if not etaPlot:
+			hist = grBinsEffData
+			if float(key[0])==0.000:
+				name="Data_eff_Eta_0.0_0.8"
+				title="Data efficiency for 0<Eta<0.8"
+			elif float(key[0])==0.800:
+				name="Data_eff_Eta_0.8_1.479"
+				title="Data efficiency for 0.8<Eta<1.479"
+			elif float(key[0])==1.479:
+				name="Data_eff_Eta_1.479_2.0"
+				title="Data efficiency for 1.479<Eta<2.0"
+			elif float(key[0])==2.000:
+				name="Data_eff_Eta_2.0_2.5"
+				title="Data efficiency for 2.0<Eta<2.5"
+			hist.GetXaxis().SetTitle("pT [GeV]")
+			hist.GetYaxis().SetTitle("Data efficiency")
+			hist.SetTitle(title)
+			hist.SetMarkerColor(1)
+			hist.SetLineColor(2)
+			hist.Write(name)
+	listOfTGraph1.append( grBinsEffData )
         listOfTGraph2.append( grBinsSF ) 
 
         if etaPlot:
             leg.AddEntry( grBinsEffData, '%3.0f #leq p_{T} #leq  %3.0f GeV'   % (float(key[0]),float(key[1])), "PL")        
         else:
             leg.AddEntry( grBinsEffData, '%1.3f #leq | #eta | #leq  %1.3f' % (float(key[0]),float(key[1])), "PL")        
-
-        
     for igr in range(len(listOfTGraph1)+1):
 
         option = "P"
@@ -190,30 +197,25 @@ def EffiGraph1D(effDataList, sfList ,etaPlot,nameout):
         use_igr = igr
         if use_igr == len(listOfTGraph1):
             use_igr = 0
-            
-        listOfTGraph1[use_igr].SetLineColor(graphColors[use_igr])
+       	listOfTGraph1[use_igr].SetLineColor(graphColors[use_igr])
         listOfTGraph1[use_igr].SetMarkerColor(graphColors[use_igr])
 
         listOfTGraph1[use_igr].GetHistogram().SetMinimum(effiMin)
         listOfTGraph1[use_igr].GetHistogram().SetMaximum(effiMax)
         p1.cd()
         listOfTGraph1[use_igr].Draw(option)
-
-        listOfTGraph2[use_igr].SetLineColor(graphColors[use_igr])
+	listOfTGraph2[use_igr].SetLineColor(graphColors[use_igr])
         listOfTGraph2[use_igr].SetMarkerColor(graphColors[use_igr])
         listOfTGraph2[use_igr].GetHistogram().SetMinimum(sfMin)
         listOfTGraph2[use_igr].GetHistogram().SetMaximum(sfMax)
         if not etaPlot:
             listOfTGraph2[use_igr].GetHistogram().GetXaxis().SetMoreLogLabels()
-        listOfTGraph2[use_igr].GetHistogram().GetXaxis().SetNoExponent()
+	listOfTGraph2[use_igr].GetHistogram().GetXaxis().SetNoExponent()
         p2.cd()        
         listOfTGraph2[use_igr].Draw(option)
-        
-
     lineAtOne = rt.TLine(xMin,1,xMax,1)
     lineAtOne.SetLineStyle(rt.kDashed)
     lineAtOne.SetLineWidth(2)
-    
     p2.cd()
     lineAtOne.Draw()
 
@@ -244,8 +246,8 @@ def diagnosticErrorPlot( effgr, ierror, nameout ):
     c2D_Err.GetPad(2).SetLeftMargin( 0.15)
     c2D_Err.GetPad(2).SetTopMargin(  0.10)
 
-    h2_sfErrorAbs = effgr.ptEtaScaleFactor_2DHisto(ierror+1, False )
-    h2_sfErrorRel = effgr.ptEtaScaleFactor_2DHisto(ierror+1, True  )
+    h2_sfErrorAbs = effgr.ptEtaScaleFactor_2DHisto(ierror+1,0, False )
+    h2_sfErrorRel = effgr.ptEtaScaleFactor_2DHisto(ierror+1,0, True  )
     h2_sfErrorAbs.SetMinimum(0)
     h2_sfErrorAbs.SetMaximum(min(h2_sfErrorAbs.GetMaximum(),0.2))
     h2_sfErrorRel.SetMinimum(0)
@@ -261,7 +263,7 @@ def diagnosticErrorPlot( effgr, ierror, nameout ):
 
 
 
-def doEGM_SFs(filein, lumi):
+def doEGM_SFs(filein, lumi, Saveoption):
     print " Opening file: %s (plot lumi: %3.1f)" % ( filein, lumi )
     CMS_lumi.lumi_13TeV = "%+3.1f fb^{-1}" % lumi 
 
@@ -308,17 +310,13 @@ def doEGM_SFs(filein, lumi):
     pdfout = nameOutBase + '_egammaPlots.pdf'
     cDummy = rt.TCanvas()
     cDummy.Print( pdfout + "[" )
-
-
-    EffiGraph1D( effGraph.pt_1DGraph_list(False) , effGraph.pt_1DGraph_list(True) , False, pdfout )
-#EffiGraph1D( effGraph.pt_1DGraph_list_customEtaBining(customEtaBining,False) , 
-#             effGraph.pt_1DGraph_list_customEtaBining(customEtaBining,True)   , False, pdfout )
-    EffiGraph1D( effGraph.eta_1DGraph_list(False), effGraph.eta_1DGraph_list(True), True , pdfout )
-
+    #open root file for scale factor map and efficiency plots
+    rootout = rt.TFile(nameOutBase + '_SF2D.root','recreate')
+    EffiGraph1D( effGraph.eta_1DGraph_list(False), effGraph.eta_1DGraph_list(True), True , pdfout, Saveoption )
+    EffiGraph1D( effGraph.pt_1DGraph_list(False) , effGraph.pt_1DGraph_list(True) , False, pdfout, Saveoption )
 #cDummy.Print( pdfout + "]" )
-
-    h2SF    = effGraph.ptEtaScaleFactor_2DHisto(-1)
-    h2Error = effGraph.ptEtaScaleFactor_2DHisto( 0)  ## only error bars
+    h2SF    = effGraph.ptEtaScaleFactor_2DHisto(-1,0)
+    h2Error = effGraph.ptEtaScaleFactor_2DHisto( 0,0)  ## only error bars
 
     rt.gStyle.SetPalette(1)
     rt.gStyle.SetPaintTextFormat('1.3f');
@@ -352,17 +350,17 @@ def doEGM_SFs(filein, lumi):
     c2D.Print( pdfout )
 
 
-    rootout = rt.TFile(nameOutBase + '_SF2D.root','recreate')
     rootout.cd()
     h2SF.Write('EGamma_SF2D',rt.TObject.kOverwrite)
+    #get mc_efficiencies and save to ROOT file
+    mc_effs    = effGraph.ptEtaScaleFactor_2DHisto(-1,1)
+    for hist in mc_effs:
+	hist.Write()
     rootout.Close()
-
     for isyst in range(len(efficiency.getSystematicNames())):
         diagnosticErrorPlot( effGraph, isyst, pdfout )
 
     cDummy.Print( pdfout + "]" )
-
-
 
 if __name__ == "__main__":
 
