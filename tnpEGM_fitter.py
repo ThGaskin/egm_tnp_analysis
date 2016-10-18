@@ -17,6 +17,7 @@ parser.add_argument('--doFit'      , action='store_true'  , help = 'fit sample (
 parser.add_argument('--mcSig'      , action='store_true'  , help = 'fit MC nom [to init fit parama]')
 parser.add_argument('--doPlot'     , action='store_true'  , help = 'plotting')
 parser.add_argument('--sumUp'      , action='store_true'  , help = 'sum up efficiencies')
+parser.add_argument('--saveEfficiencies'       , action='store_true'  , help = 'save efficiency plots seperately for fitting')
 parser.add_argument('--iBin'       , dest = 'binNumber'   , type = int,  default=-1, help='bin number (to refit individual bin)')
 parser.add_argument('--flag'       , default = None       , help ='WP to test')
 parser.add_argument('settings'     , default = None       , help = 'setting file [mandatory]')
@@ -83,9 +84,10 @@ tnpBins = pickle.load( open( '%s/bining.pkl'%(outputDirectory),'rb') )
 for s in tnpConf.samplesDef.keys():
     sample =  tnpConf.samplesDef[s]
     if sample is None: continue
+    print sample
     setattr( sample, 'tree'     ,'%s/fitter_tree' % tnpConf.tnpTreeDir )
     setattr( sample, 'histFile' , '%s/%s_%s.root' % ( outputDirectory , sample.name, args.flag ) )
-
+	
 
 if args.createHists:
     for sampleType in tnpConf.samplesDef.keys():
@@ -169,6 +171,10 @@ if  args.doPlot:
 ##### dumping egamma txt file 
 ####################################################################
 if args.sumUp:
+    if args.saveEfficiencies:
+	Saveoption = True
+    else:
+	Saveoption = False
     sampleToFit.dump()
     info = {
         'dataNominal' : sampleToFit.nominalFit,
@@ -218,4 +224,7 @@ if args.sumUp:
 
     print 'Effis saved in file : ',  effFileName
     import libPython.EGammaID_scaleFactors as egm_sf
-    egm_sf.doEGM_SFs(effFileName,sampleToFit.lumi)
+    egm_sf.doEGM_SFs(effFileName,sampleToFit.lumi, Saveoption)
+    if Saveoption:
+    	print'---------------------------------------------------------------------------'
+	print 'Efficiencies have been saved in: '+outputDirectory+'egammaEffi.txt_SF2D.root'
